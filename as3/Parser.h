@@ -62,7 +62,7 @@ void loadScene(std::string filename, vector<BezPatch>& patches, double u, double
 			}
 
 			if (curveCount == 4){
-				cout << patchCount << endl;
+				//cout << patchCount << endl;
 				patches[patchCount] = BezPatch(curves[0], curves[1], curves[2],curves[3], u, v);
 				curveCount = 0;
 				patchCount++;

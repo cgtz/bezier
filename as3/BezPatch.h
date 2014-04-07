@@ -8,6 +8,6 @@ public:
 	double u, v;
 	BezPatch() {};
 	BezPatch(BezCurve c0, BezCurve c1, BezCurve c2, BezCurve c3, double u, double v);
-
+	//pair<vec3,vec3> interpolate();
 };
 

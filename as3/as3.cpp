@@ -138,6 +138,61 @@ void circle(float centerX, float centerY, float radius) {
 
   glEnd();
 }
+
+//Return point and derivative
+pair<vec3, vec3> bezcurveinterpolate(BezCurve curve, double u)
+{
+	vec3 A = curve.p0 * (1.0-u) + curve.p1 * u;
+	vec3 B = curve.p1 * (1.0-u) + curve.p2 * u;
+	vec3 C = curve.p2 * (1.0-u) + curve.p3 * u;
+
+	vec3 D = A * (1.0-u) + B * u;
+	vec3 E = B * (1.0-u) + C * u;
+
+	return pair<vec3, vec3>(D * (1.0-u) + E * u, 3*(E - D));
+}
+
+//Return surface point and normal
+pair<vec3,vec3> bezpatchinterpolate(BezPatch patch, double u, double v)
+{
+	//Control points in v
+	BezCurve vcurve;
+	vcurve.p0 = bezcurveinterpolate(patch.c0, u).first;
+	vcurve.p1 = bezcurveinterpolate(patch.c1, u).first;
+	vcurve.p2 = bezcurveinterpolate(patch.c2, u).first;
+	vcurve.p3 = bezcurveinterpolate(patch.c3, u).first;
+
+	//Control points in u
+	BezCurve ucurve;
+	ucurve.p0 = bezcurveinterpolate(patch.c0, v).first;
+	ucurve.p1 = bezcurveinterpolate(patch.c1, v).first;
+	ucurve.p2 = bezcurveinterpolate(patch.c2, v).first;
+	ucurve.p3 = bezcurveinterpolate(patch.c3, v).first;
+
+	pair<vec3,vec3> pdV = bezcurveinterpolate(vcurve, v);
+	pair<vec3,vec3> pdU = bezcurveinterpolate(ucurve, u);
+
+	if (pdV.first != pdU.first) cout << "Points don't match!" << endl;
+
+	return pair<vec3,vec3>(pdV.first, (pdU.second^pdV.second).normalize());
+
+}
+
+void uniformsubdivision(BezPatch patch, double step)
+{
+	int numdiv = 1.01 / step;
+	for (int iu=0; iu<numdiv; iu++){
+		double u = iu * step;
+		for(int iv=0; iv<numdiv; iv++){
+			double v = iv * step;
+			pair<vec3,vec3> pn = bezpatchinterpolate(patch, u, v); //do x4 ?
+			//Don't store. Draw write(pun intended) away!
+			//glNormal * 4
+			//glVertex * 4
+		}
+	}
+}
+
 //****************************************************
 // function that does the actual drawing of stuff
 //***************************************************
@@ -167,11 +222,11 @@ int main(int argc, char *argv[]) {
 		mode = (argc == 4);
 		vector<BezPatch> patches(1);
 		loadScene(argv[1], patches, atof(argv[2]), atof(argv[2]));
-		cout << patches[0].c1.p0  << " " << patches[0].c2.p1  << " " << patches[0].c3.p2  << " " << patches[0].u << endl;
+		//cout << patches[0].c1.p0  << " " << patches[0].c2.p1  << " " << patches[0].c3.p2  << " " << patches[0].u << endl;
 		cout << "Done parsing." << endl;
 	}
 	else {
-		cout << "Unable to find file. No arguments given." << endl; 
+		cout << "Unable to find file. No arguments given." << endl;
 	}
 	
 	
@@ -191,6 +246,23 @@ int main(int argc, char *argv[]) {
   glutCreateWindow(argv[0]);
 
   initScene();							// quick function to set up scene
+
+  //PSUEDOCODE 
+  //if (mode){
+	 // //for each patch i in all patches
+	 // glBegin(GL_TRIANGLES);
+		//adaptivesubdivide(patch i, step)
+	 // glEnd();
+  //
+  //}
+  //else{
+	 // //for each patch i in all patches
+	 // glBegin(GL_TRIANGLES);
+		//uniformsubdivision(patch i, step)
+	 // glEnd();
+  //}
+
+
 
   glutDisplayFunc(myDisplay);				// function to run when its time to draw something
   glutReshapeFunc(myReshape);				// function to run when the window gets resized

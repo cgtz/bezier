@@ -10,3 +10,4 @@ BezPatch::BezPatch(BezCurve c0, BezCurve c1, BezCurve c2, BezCurve c3, double u,
 	this->u = u;
 	this->v = v;
 }
+
