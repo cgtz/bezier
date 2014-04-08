@@ -140,12 +140,16 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 	vec2 mu01 = (u0+u1)/2, mu12 = (u1+u2)/2, mu02 = (u0+u2)/2;
 	vec3 mp01 = (p0+p1)/2, mp12 = (p1+p2)/2, mp02 = (p0+p2)/2;
 	
-	bool e1 = (bezpatchinterpolate(patch, mu01[VX], mu01[VY]).first - mp01).length() > step;
-	bool e2 = (bezpatchinterpolate(patch, mu12[VX], mu12[VY]).first - mp12).length() > step;
-	bool e3 = (bezpatchinterpolate(patch, mu02[VX], mu02[VY]).first - mp02).length() > step;
+	vec3 mid01 = bezpatchinterpolate(patch, mu01[VX], mu01[VY]).first;
+	vec3 mid12 = bezpatchinterpolate(patch, mu12[VX], mu12[VY]).first;
+	vec3 mid02 = bezpatchinterpolate(patch, mu02[VX], mu02[VY]).first;
+
+	bool e1 = (mid01 - mp01).length() > step;
+	bool e2 = (mid12- mp12).length() > step;
+	bool e3 = (mid02 - mp02).length() > step;
 	
-	if ((p0-p1).length2() < 0.0001 || (p0-p2).length2() < 0.0001 || (p1-p2).length2() < 0.0001) {
-			glVertex3f(p0[VX], p0[VY], p0[VZ]);
+/*	if ((p0-p1).length2() < 0.0001 || (p0-p2).length2() < 0.0001 || (p1-p2).length2() < 0.0001) {
+		glVertex3f(p0[VX], p0[VY], p0[VZ]);
 		pair<vec3,vec3> temp = bezpatchinterpolate(patch, u0[VX], u0[VY]);
 		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
 
@@ -157,7 +161,7 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 		temp = bezpatchinterpolate(patch, u2[VX], u2[VY]);
 		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
 		return;
-		} else if (!e3 && !e2 && !e1) {
+		}*/ if (!e3 && !e2 && !e1) {
 		//cout << "yah" << endl;
 		
 		glVertex3f(p0[VX], p0[VY], p0[VZ]);
@@ -174,44 +178,44 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 		return;
 	} else if (!e3 && !e2 && e1) {
 		//cout << "eyah1" << endl;
-		adaptivesubdivide(patch, mp01, p1, p2, mu01, u1, u2, step);
-		adaptivesubdivide(patch, p0, mp01, p2, u0, mu01, u2, step);
+		adaptivesubdivide(patch, mid01, p1, p2, mu01, u1, u2, step);
+		adaptivesubdivide(patch, p0, mid01, p2, u0, mu01, u2, step);
 	} else if (!e3 &&  e2 && !e1) {
 		cout << "eyah2" << endl;
 		//cout << p0 << p1 << p2 <<   endl;
 		
-		adaptivesubdivide(patch, p0, p1, mp12, u0, u1, mu12, step);
+		adaptivesubdivide(patch, p0, p1, mid12, u0, u1, mu12, step);
 		//cout << "yo" << endl;
-		adaptivesubdivide(patch, p0, mp12, p2, u0, mu12, u2, step);
+		adaptivesubdivide(patch, p0, mid12, p2, u0, mu12, u2, step);
 		//cout << "ho" << endl;
 	} else if ( e3 && !e2 && !e1) {
 		//cout << "eyah3" << endl;
 		cout << p0 << p1 << p2 <<   endl;
-		adaptivesubdivide(patch, p0, p1, mp02, u0, u1, mu02, step);
-		adaptivesubdivide(patch, mp02, p1, p2, mu02, u1, u2, step);
+		adaptivesubdivide(patch, p0, p1, mid02, u0, u1, mu02, step);
+		adaptivesubdivide(patch, mid02, p1, p2, mu02, u1, u2, step);
 	} else if (!e3 &&  e2 &&  e1) {
 		//cout << "eyah4" << endl;
-		adaptivesubdivide(patch, mp01, p1, mp12, mu01, u1, mu12, step);
-		adaptivesubdivide(patch, mp01, mp12, p2, mu01, mu12, u2, step);
-		adaptivesubdivide(patch, p0, mp01, p2, u0, mu01, u2, step);
+		adaptivesubdivide(patch, mid01, p1, mid12, mu01, u1, mu12, step);
+		adaptivesubdivide(patch, mid01, mid12, p2, mu01, mu12, u2, step);
+		adaptivesubdivide(patch, p0, mid01, p2, u0, mu01, u2, step);
 	} else if ( e3 &&  e2 && !e1) {
 		//cout << "eyah5" << endl;
-		adaptivesubdivide(patch, p0, p1, mp12, u0, u1, mu12, step);
-		adaptivesubdivide(patch, p0, mp12, mp02, u0, mu12, mu02, step);
-		adaptivesubdivide(patch, mp02, mp12, p2, mu02, mu12, u2, step);
+		adaptivesubdivide(patch, p0, p1, mid12, u0, u1, mu12, step);
+		adaptivesubdivide(patch, p0, mid12, mid02, u0, mu12, mu02, step);
+		adaptivesubdivide(patch, mid02, mid12, p2, mu02, mu12, u2, step);
 	} else if ( e3 && !e2 &&  e1) {
 		//cout << "eyah6" << endl;
-		adaptivesubdivide(patch, mp02, p1, p2, mu02, u1, u2, step);
-		adaptivesubdivide(patch, mp01, p1, mp02, mu01, u1, mu02, step);
-		adaptivesubdivide(patch, p0, mp01, mp02, u0, mu01, mu02, step);
+		adaptivesubdivide(patch, mid02, p1, p2, mu02, u1, u2, step);
+		adaptivesubdivide(patch, mid01, p1, mid02, mu01, u1, mu02, step);
+		adaptivesubdivide(patch, p0, mid01, mid02, u0, mu01, mu02, step);
 	} 
-	// else if ( e3 &&  e2 &&  e1) {
-	//	//cout << "eyah7" << endl;
-	//	adaptivesubdivide(patch, mp01, p1, mp12, mu01, u1, mu12, step);
-	//	adaptivesubdivide(patch, mp01, mp12, mp02, mu01, mu12, mu02, step);
-	//	adaptivesubdivide(patch, p0, mp01, mp02, u0, mu01, mu02, step);
-	//	adaptivesubdivide(patch, mp02, mp12, p2, mu02, mp12, p2, step);
-	//}
+	 else if ( e3 &&  e2 &&  e1) {
+		//cout << "eyah7" << endl;
+		adaptivesubdivide(patch, mid01, p1, mid12, mu01, u1, mu12, step);
+		adaptivesubdivide(patch, mid01, mid12, mid02, mu01, mu12, mu02, step);
+		adaptivesubdivide(patch, p0, mid01, mid02, u0, mu01, mu02, step);
+		adaptivesubdivide(patch, mid02, mid12, p2, mu02, mu12, u2, step);
+	}
 }
 
 
