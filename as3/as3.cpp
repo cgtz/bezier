@@ -64,7 +64,7 @@ void myReshape(int w, int h) {
 	gluPerspective(30, (GLfloat) w/(GLfloat) h, 1.0, 100.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0, 10, 10, 0, 0, 0, 0, 1, 0);
+	gluLookAt(10, 10, 10, 0, 0, 0, 0, 1, 0);
 }
 
 //Return point and derivative
@@ -144,7 +144,20 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 	bool e2 = (bezpatchinterpolate(patch, mu12[VX], mu12[VY]).first - mp12).length() > step;
 	bool e3 = (bezpatchinterpolate(patch, mu02[VX], mu02[VY]).first - mp02).length() > step;
 	
-	if (!e3 && !e2 && !e1) {
+	if ((p0-p1).length2() < 0.0001 || (p0-p2).length2() < 0.0001 || (p1-p2).length2() < 0.0001) {
+			glVertex3f(p0[VX], p0[VY], p0[VZ]);
+		pair<vec3,vec3> temp = bezpatchinterpolate(patch, u0[VX], u0[VY]);
+		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
+
+		glVertex3f(p1[VX], p1[VY], p1[VZ]);
+		temp = bezpatchinterpolate(patch, u1[VX], u1[VY]);
+		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
+
+		glVertex3f(p2[VX], p2[VY], p2[VZ]);
+		temp = bezpatchinterpolate(patch, u2[VX], u2[VY]);
+		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
+		return;
+		} else if (!e3 && !e2 && !e1) {
 		//cout << "yah" << endl;
 		
 		glVertex3f(p0[VX], p0[VY], p0[VZ]);
@@ -164,14 +177,16 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 		adaptivesubdivide(patch, mp01, p1, p2, mu01, u1, u2, step);
 		adaptivesubdivide(patch, p0, mp01, p2, u0, mu01, u2, step);
 	} else if (!e3 &&  e2 && !e1) {
-		//cout << "eyah2" << endl;
+		cout << "eyah2" << endl;
 		//cout << p0 << p1 << p2 <<   endl;
+		
 		adaptivesubdivide(patch, p0, p1, mp12, u0, u1, mu12, step);
 		//cout << "yo" << endl;
 		adaptivesubdivide(patch, p0, mp12, p2, u0, mu12, u2, step);
 		//cout << "ho" << endl;
 	} else if ( e3 && !e2 && !e1) {
 		//cout << "eyah3" << endl;
+		cout << p0 << p1 << p2 <<   endl;
 		adaptivesubdivide(patch, p0, p1, mp02, u0, u1, mu02, step);
 		adaptivesubdivide(patch, mp02, p1, p2, mu02, u1, u2, step);
 	} else if (!e3 &&  e2 &&  e1) {
@@ -189,13 +204,14 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 		adaptivesubdivide(patch, mp02, p1, p2, mu02, u1, u2, step);
 		adaptivesubdivide(patch, mp01, p1, mp02, mu01, u1, mu02, step);
 		adaptivesubdivide(patch, p0, mp01, mp02, u0, mu01, mu02, step);
-	} else if ( e3 &&  e2 &&  e1) {
-		//cout << "eyah7" << endl;
-		adaptivesubdivide(patch, mp01, p1, mp12, mu01, u1, mu12, step);
-		adaptivesubdivide(patch, mp01, mp12, mp02, mu01, mu12, mu02, step);
-		adaptivesubdivide(patch, p0, mp01, mp02, u0, mu01, mu02, step);
-		adaptivesubdivide(patch, mp02, mp12, p2, mu02, mp12, p2, step);
-	}
+	} 
+	// else if ( e3 &&  e2 &&  e1) {
+	//	//cout << "eyah7" << endl;
+	//	adaptivesubdivide(patch, mp01, p1, mp12, mu01, u1, mu12, step);
+	//	adaptivesubdivide(patch, mp01, mp12, mp02, mu01, mu12, mu02, step);
+	//	adaptivesubdivide(patch, p0, mp01, mp02, u0, mu01, mu02, step);
+	//	adaptivesubdivide(patch, mp02, mp12, p2, mu02, mp12, p2, step);
+	//}
 }
 
 
@@ -244,7 +260,30 @@ void myDisplay() {
 	glutSwapBuffers();  
 }
 
-
+void keyboard(unsigned char key, int x, int y)
+{
+   switch (key) {
+   case 'x':
+   case 'X':
+      glRotatef(15.,1.0,0.0,0.0);
+      glutPostRedisplay();
+      break;
+   case 'y':
+   case 'Y':
+      glRotatef(15.,0.0,1.0,0.0);
+      glutPostRedisplay();
+      break;
+   case 'i':
+   case 'I':
+      glLoadIdentity();
+      gluLookAt(0, 0, 10, 0, 0, 0, 0, 1, 0);
+      glutPostRedisplay();
+      break;
+   case 27:
+      exit(0);
+      break;
+   }
+}
 
 //****************************************************
 // the usual stuff, nothing exciting here
@@ -263,7 +302,6 @@ int main(int argc, char *argv[]) {
 		cout << "Unable to find file. No arguments given." << endl;
 	}
 
-
 	//This initializes glut
 	glutInit(&argc, argv);
 
@@ -281,13 +319,9 @@ int main(int argc, char *argv[]) {
 
 	initScene();							// quick function to set up scene
 
-
-
-
-
 	glutDisplayFunc(myDisplay);				// function to run when its time to draw something
 	glutReshapeFunc(myReshape);				// function to run when the window gets resized
-
+	glutKeyboardFunc(keyboard);
 	glutMainLoop();							// infinite loop that will keep drawing and resizing
 	// and whatever else
 
