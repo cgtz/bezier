@@ -43,11 +43,12 @@ public:
 //****************************************************
 // Global Variables
 //****************************************************
-Viewport	viewport;
-bool mode; // true is adaptive, false is uniform
+Viewport viewport;
+bool mode=0, shading=0, wireframe=0; // true is adaptive, false is uniform
 GLuint object;
 vector<BezPatch> patches(1);
 double step = 0.0;
+double zoomFactor = 1.0;
 
 
 
@@ -61,10 +62,10 @@ void myReshape(int w, int h) {
 	glViewport (0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(30, (GLfloat) w/(GLfloat) h, 1.0, 100.0);
+	gluPerspective(30*zoomFactor, (GLfloat) w/(GLfloat) h, 1.0, 100.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(10, 10, 10, 0, 0, 0, 0, 1, 0);
+	gluLookAt(0, 20, 0, 0, 0, 0, 0, 0, 1);
 }
 
 //Return point and derivative
@@ -101,38 +102,40 @@ pair<vec3,vec3> bezpatchinterpolate(BezPatch patch, double u, double v)
 	pair<vec3,vec3> pdU = bezcurveinterpolate(ucurve, u);
 
 	//if (pdV.first != pdU.first) cout << "Points don't match! "<< pdV.first << pdU.first << endl;
-
+	//cout <<(pdU.second^pdV.second).length() << endl;
 	return pair<vec3,vec3>(pdV.first, (pdU.second^pdV.second).normalize());
 
 }
 
 void uniformsubdivide(BezPatch patch, double step)
 {
-	int numdiv = 1.01 / step;
-	glBegin(GL_QUADS);
+	int numdiv = 1.04 / step;
 	for (int iu=0; iu<numdiv; iu++){
 		double u = iu * step;
 		for(int iv=0; iv<numdiv; iv++){
 			double v = iv * step;
 			pair<vec3,vec3> pn = bezpatchinterpolate(patch, u, v); //do x4 ?
 			//Don't store. Draw write(pun intended) away!
-			glVertex3f(pn.first[VX], pn.first[VY], pn.first[VZ]);
 			glNormal3f(pn.second[VX], pn.second[VY], pn.second[VZ]);
+			glVertex3f(pn.first[VX], pn.first[VY], pn.first[VZ]);
+			
 
 			pn = bezpatchinterpolate(patch, u+step, v);
-			glVertex3f(pn.first[VX], pn.first[VY], pn.first[VZ]);
 			glNormal3f(pn.second[VX], pn.second[VY], pn.second[VZ]);
+			glVertex3f(pn.first[VX], pn.first[VY], pn.first[VZ]);
+			
 
 			pn = bezpatchinterpolate(patch, u+step, v+step);
-			glVertex3f(pn.first[VX], pn.first[VY], pn.first[VZ]);
 			glNormal3f(pn.second[VX], pn.second[VY], pn.second[VZ]);
+			glVertex3f(pn.first[VX], pn.first[VY], pn.first[VZ]);
+			
 
 			pn = bezpatchinterpolate(patch, u, v+step);
-			glVertex3f(pn.first[VX], pn.first[VY], pn.first[VZ]);
 			glNormal3f(pn.second[VX], pn.second[VY], pn.second[VZ]);
+			glVertex3f(pn.first[VX], pn.first[VY], pn.first[VZ]);
+			
 		}
 	}
-	glEnd();
 }
 
 void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 u1, vec2 u2, double step)
@@ -148,40 +151,28 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 	bool e2 = (mid12- mp12).length() > step;
 	bool e3 = (mid02 - mp02).length() > step;
 	
-/*	if ((p0-p1).length2() < 0.0001 || (p0-p2).length2() < 0.0001 || (p1-p2).length2() < 0.0001) {
-		glVertex3f(p0[VX], p0[VY], p0[VZ]);
-		pair<vec3,vec3> temp = bezpatchinterpolate(patch, u0[VX], u0[VY]);
-		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
-
-		glVertex3f(p1[VX], p1[VY], p1[VZ]);
-		temp = bezpatchinterpolate(patch, u1[VX], u1[VY]);
-		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
-
-		glVertex3f(p2[VX], p2[VY], p2[VZ]);
-		temp = bezpatchinterpolate(patch, u2[VX], u2[VY]);
-		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
-		return;
-		}*/ if (!e3 && !e2 && !e1) {
+	if (!e3 && !e2 && !e1) {
 		//cout << "yah" << endl;
 		
-		glVertex3f(p0[VX], p0[VY], p0[VZ]);
 		pair<vec3,vec3> temp = bezpatchinterpolate(patch, u0[VX], u0[VY]);
 		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
+		glVertex3f(p0[VX], p0[VY], p0[VZ]);
 
-		glVertex3f(p1[VX], p1[VY], p1[VZ]);
 		temp = bezpatchinterpolate(patch, u1[VX], u1[VY]);
 		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
+		glVertex3f(p1[VX], p1[VY], p1[VZ]);
 
-		glVertex3f(p2[VX], p2[VY], p2[VZ]);
 		temp = bezpatchinterpolate(patch, u2[VX], u2[VY]);
 		glNormal3f(temp.second[VX], temp.second[VY], temp.second[VZ]);
+		glVertex3f(p2[VX], p2[VY], p2[VZ]);
+
 		return;
 	} else if (!e3 && !e2 && e1) {
 		//cout << "eyah1" << endl;
 		adaptivesubdivide(patch, mid01, p1, p2, mu01, u1, u2, step);
 		adaptivesubdivide(patch, p0, mid01, p2, u0, mu01, u2, step);
 	} else if (!e3 &&  e2 && !e1) {
-		cout << "eyah2" << endl;
+		//cout << "eyah2" << endl;
 		//cout << p0 << p1 << p2 <<   endl;
 		
 		adaptivesubdivide(patch, p0, p1, mid12, u0, u1, mu12, step);
@@ -190,7 +181,7 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 		//cout << "ho" << endl;
 	} else if ( e3 && !e2 && !e1) {
 		//cout << "eyah3" << endl;
-		cout << p0 << p1 << p2 <<   endl;
+		//cout << p0 << p1 << p2 <<   endl;
 		adaptivesubdivide(patch, p0, p1, mid02, u0, u1, mu02, step);
 		adaptivesubdivide(patch, mid02, p1, p2, mu02, u1, u2, step);
 	} else if (!e3 &&  e2 &&  e1) {
@@ -224,17 +215,25 @@ void adaptivesubdivide(BezPatch patch, vec3 p0, vec3 p1, vec3 p2, vec2 u0, vec2 
 // Simple init function
 //****************************************************
 void initScene(){
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glShadeModel(GL_FLAT);
+
 	object = glGenLists(1);
 	glNewList(object, GL_COMPILE);
 	if (mode){
 		glBegin(GL_TRIANGLES);
 		//for each patch i in all patches
+		vec3 p0, p1, p2, p3;
+
 		for (int i = 0; i<patches.size(); i++) {
-			vec3 p0 = bezpatchinterpolate(patches[i], 0, 0).first;
-			vec3 p1 = bezpatchinterpolate(patches[i], 0, 1).first;
-			vec3 p2 = bezpatchinterpolate(patches[i], 1, 1).first;
-			vec3 p3 = bezpatchinterpolate(patches[i], 1, 0).first;
+			cout << "%";
+			p0 = bezpatchinterpolate(patches[i], 0, 0).first;
+			p1 = bezpatchinterpolate(patches[i], 0, 1).first;
+			p2 = bezpatchinterpolate(patches[i], 1, 1).first;
+			p3 = bezpatchinterpolate(patches[i], 1, 0).first;
 			adaptivesubdivide(patches[i], p0, p1, p2, vec2(0,0), vec2(0,1), vec2(1,1), step);
 			adaptivesubdivide(patches[i], p0, p2, p3, vec2(0,0), vec2(1,1), vec2(1,0), step);
 		}
@@ -242,13 +241,16 @@ void initScene(){
 	}
 	else{
 		//for each patch i in all patches
+		glBegin(GL_QUADS);
 		for (int i = 0; i<patches.size(); i++) {
+			cout << "%";
 			uniformsubdivide(patches[i], step);
 		}
+		glEnd();
 	}
+	cout << endl;
 	glEndList();
 
-	glShadeModel(GL_FLAT);
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 }
 
@@ -257,7 +259,7 @@ void initScene(){
 // function that does the actual drawing of stuff
 //***************************************************
 void myDisplay() {
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glColor3f (1.0, 0.0, 0.0);
 	glCallList(object);
 	glFlush();
@@ -266,27 +268,65 @@ void myDisplay() {
 
 void keyboard(unsigned char key, int x, int y)
 {
-   switch (key) {
-   case 'x':
-   case 'X':
-      glRotatef(15.,1.0,0.0,0.0);
-      glutPostRedisplay();
-      break;
-   case 'y':
-   case 'Y':
-      glRotatef(15.,0.0,1.0,0.0);
-      glutPostRedisplay();
-      break;
-   case 'i':
-   case 'I':
-      glLoadIdentity();
-      gluLookAt(0, 0, 10, 0, 0, 0, 0, 1, 0);
-      glutPostRedisplay();
-      break;
-   case 27:
-      exit(0);
-      break;
-   }
+	switch (key) {
+	case 's':
+		if (shading) { 
+			glShadeModel(GL_FLAT);
+		} else {
+			glShadeModel(GL_SMOOTH);
+		}
+		glutPostRedisplay();
+		shading = !shading;
+		break;
+	case 'w':
+		if (wireframe) { 
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+		} else {
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+		}
+		glutPostRedisplay();
+		wireframe = !wireframe;
+		break;
+	case '+':
+		zoomFactor -= 0.1;
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(30*zoomFactor, (GLfloat) viewport.w/(GLfloat) viewport.h, 1.0, 100.0);
+		glutPostRedisplay();
+		break;
+	case '-':
+		zoomFactor += 0.1;
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(30*zoomFactor, (GLfloat) viewport.w/(GLfloat) viewport.h, 1.0, 100.0);
+		glutPostRedisplay();
+		break;
+	case 27:
+		exit(0);
+		break;
+	}
+}
+
+void arrows(int key, int x, int y)
+{
+	switch (key) {
+	case GLUT_KEY_UP:
+		glRotatef(15.,1.0,0.0,0.0);
+		glutPostRedisplay();
+		break;
+	case GLUT_KEY_DOWN:
+		glRotatef(-15.,1.0,0.0,0.0);
+		glutPostRedisplay();
+		break;
+	case GLUT_KEY_LEFT:
+		glRotatef(-15.,0.0,1.0,0.0);
+		glutPostRedisplay();
+		break;
+	case GLUT_KEY_RIGHT:
+		glRotatef(15.,0.0,1.0,0.0);
+		glutPostRedisplay();
+		break;
+	}
 }
 
 //****************************************************
@@ -310,11 +350,11 @@ int main(int argc, char *argv[]) {
 	glutInit(&argc, argv);
 
 	//This tells glut to use a double-buffered window with red, green, and blue channels 
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
 	// Initalize theviewport size
-	viewport.w = 400;
-	viewport.h = 400;
+	viewport.w = 800;
+	viewport.h = 800;
 
 	//The size and position of the window
 	glutInitWindowSize(viewport.w, viewport.h);
@@ -326,6 +366,7 @@ int main(int argc, char *argv[]) {
 	glutDisplayFunc(myDisplay);				// function to run when its time to draw something
 	glutReshapeFunc(myReshape);				// function to run when the window gets resized
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(arrows);
 	glutMainLoop();							// infinite loop that will keep drawing and resizing
 	// and whatever else
 
