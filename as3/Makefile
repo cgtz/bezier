@@ -1,22 +1,14 @@
-CC = g++
-ifeq ($(shell sw_vers 2>/dev/null | grep Mac | awk '{ print $$2}'),Mac)
-	CFLAGS = -g -DGL_GLEXT_PROTOTYPES -I./include/ -I/usr/X11/include -DOSX
-	LDFLAGS = -framework GLUT -framework OpenGL \
-    	-L"/System/Library/Frameworks/OpenGL.framework/Libraries" \
-    	-lGL -lGLU -lm -lstdc++
-else
-	CFLAGS = -g -DGL_GLEXT_PROTOTYPES -Iglut-3.7.6-bin
-	LDFLAGS = -lglut -lGLU
-endif
+CC=g++
+CFLAGS=-c -Wall -O3 
+LDFLAGS =-lGL -lGLU -lglut
+SOURCES=as3.cpp BezPatch.cpp BezCurve.cpp
+OBJECTS=$(SOURCES:.cpp=.o)
+EXECUTABLE=as3
+
+all: $(SOURCES) $(EXECUTABLE)
 	
-RM = /bin/rm -f 
-all: main 
-main: example_01.o 
-	$(CC) $(CFLAGS) -o as1 example_01.o $(LDFLAGS) 
-example_01.o: example_01.cpp
-	$(CC) $(CFLAGS) -c example_01.cpp -o example_01.o
-clean: 
-	$(RM) *.o as1
- 
+$(EXECUTABLE): $(OBJECTS) 
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 
-
+.cpp.o:
+	$(CC) $(CFLAGS) $< -o $@
